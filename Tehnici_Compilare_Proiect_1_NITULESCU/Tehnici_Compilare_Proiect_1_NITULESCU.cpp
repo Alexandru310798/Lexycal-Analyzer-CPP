@@ -13,7 +13,7 @@
 using namespace std;
 int characters;
 FILE *file;
-char input[256] = "input.txt";
+//char input[256] = "input.txt";
 int number_of_tokens;
 
 enum GLOBAL {
@@ -315,7 +315,7 @@ bool isAnythingButBackSlashAndAstrophe(char c)
 }
 bool isComment(char c)
 {
-	return c == '//';
+	return c == '/';
 }
 bool isEOF(char c)
 {
@@ -355,7 +355,7 @@ public:
 	{
 		nodesOfDFA[first].edges.push_back(second);
 		nodesOfDFA[first].isValid.push_back(func);
-		if(first>maxEdgeIndex)
+		if (first > maxEdgeIndex)
 		{
 			maxEdgeIndex = first;
 		}
@@ -363,13 +363,13 @@ public:
 		{
 			maxEdgeIndex = second;
 		}
-		
+
 	}
 	void makeEdge(int first, int second, bool(*func)(string))
 	{
 		nodesOfDFA[first].edges.push_back(second);
 		nodesOfDFA[first].isValidForStrings.push_back(func);
-		
+
 	}
 };
 
@@ -417,7 +417,7 @@ DFA::DFA()
 	makeEdge(16, 17, isDigit);						nodesOfDFA[17].type = FLOAT;
 	makeEdge(17, 17, isDigit);
 	makeEdge(19, 20, isSlash);						nodesOfDFA[20].type = COMMENT;
-	makeEdge(20, 20, isSlash);					
+	makeEdge(20, 20, isSlash);
 	makeEdge(25, 27, isAdditionSign);				nodesOfDFA[27].type = INCREMENT;
 	makeEdge(26, 27, isSubstractionSign);
 	makeEdge(25, 29, isEqualSign);
@@ -463,9 +463,9 @@ Token Scanner::getToken()
 	}
 
 	bufferPosition++;
-	if (text[bufferPosition] == ' ' || text[bufferPosition] == '//' || text[bufferPosition] == '\n')
+	if (text[bufferPosition] == ' ' || text[bufferPosition] == '\n')
 	{
-		while (text[bufferPosition] == ' ' || text[bufferPosition] == '//' || text[bufferPosition] == '\n')
+		while (text[bufferPosition] == ' ' || text[bufferPosition] == '\n')
 		{
 			bufferPosition++;
 		}
@@ -480,6 +480,7 @@ Token Scanner::getToken()
 			t.type = dfa.nodesOfDFA[currentState].type;
 			bufferPosition++;
 			i--;
+
 			if (stringsTable.count(t.message) > 0)
 			{
 				t.value = stringsTable.find(t.message)->second;
@@ -490,11 +491,13 @@ Token Scanner::getToken()
 				pair<string, int> pair = make_pair(t.message, t.value);
 				stringsTable.insert(pair);
 			}
+
 			if (t.type == STRING && isSpecialKeyword(t.message))
 			{
 				t.type = KEYWORD;
 				break;
 			}
+
 			if (i == dfa.maxEdgeIndex)
 			{
 				currentState == INVALID;
@@ -536,7 +539,7 @@ map<int, string> createMapForTokens()
 	map.insert(make_pair(NUMBER, "NUMBER"));
 	map.insert(make_pair(STRING, "STRING"));
 	map.insert(make_pair(SPACE, "SPACE"));
-	map.insert(make_pair(SLASH,"SLASH"));
+	map.insert(make_pair(SLASH, "SLASH"));
 	map.insert(make_pair(INCREMENT, "INCREMENT"));
 	map.insert(make_pair(MEMBER_SELECTION, "MEMBER SELECTION"));
 	map.insert(make_pair(UNKNOWN, "UNKNOWN"));
@@ -550,20 +553,22 @@ map<int, string> createMapForTokens()
 	return map;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
 	map<int, string> token_types = createMapForTokens();
 	Scanner scanner;
-
+	char *input, *output;
+	input = argv[1];
+	output = argv[2];
 	file = fopen(input, "r");
-	ofstream fout("output.txt");
+	ofstream fout(output);
 	if (file == NULL)
 	{
 		exit(0);
 	}
-	 characters = fread(scanner.text, sizeof(char), scanner.bufferSize, file);
+	characters = fread(scanner.text, sizeof(char), scanner.bufferSize, file);
 
-	if(characters == 0 )
+	if (characters == 0)
 	{
 		fout << " INVALID READ";
 		exit(0);
@@ -574,30 +579,26 @@ int main()
 		scanner.text[characters] = '\0';
 	}
 
-	fout <<"The input text is: \n\n"<< scanner.text << "\n\n\n\n";
+	fout << "The input text is: \n\n" << scanner.text << "\n\n\n The result is: \n\n";
 	while (scanner.bufferPosition < characters)
 	{
-	
+
 		Token t = scanner.getToken();
 		if (t.type != SPACE && t.type != COMMENT && t.type != INVALID)
 		{
 			if (t.type == STRING || t.type == KEYWORD || t.type == LETTER)
 			{
-				fout <<"'"<< t.message << "'  <-> " << token_types.find(t.type)->second << "              String table value:  " << t.value << endl;
+				fout << "'" << t.message << "'  <-> " << token_types.find(t.type)->second << "              String table value:  " << t.value << endl;
 
 			}
 			else
 			{
-				fout << t.message << "  <-> " << token_types.find(t.type)->second << "              String table value: "<<t.value<<endl;
+				fout << t.message << "  <-> " << token_types.find(t.type)->second << "              String table value: " << t.value << endl;
 
 			}
 		}
-		else if (t.type == END_OF_FILE)
-		{
-			fout << "END";
-		}
 	}
-	
+
 	fclose(file);
 
 
