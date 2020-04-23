@@ -323,15 +323,13 @@ bool isEOF(char c)
 }
 struct Token {
 	int type, value;
-	string message;
-	Token(int, int, string);
+	Token(int, int);
 };
 
-Token::Token(int t = 0, int v = 0, string m = "")
+Token::Token(int t = 0, int v = 0)
 {
 	type = t;
 	value = v;
-	message = m;
 }
 struct Node {
 
@@ -350,19 +348,10 @@ class DFA {
 public:
 	DFA();			//constructor
 	vector<Node> nodesOfDFA;			//the DFA states
-	int maxEdgeIndex = 0;
 	void makeEdge(int first, int second, bool(*func)(char))		//create an edge from the first int to the second if the condition is true
 	{
 		nodesOfDFA[first].edges.push_back(second);
 		nodesOfDFA[first].isValid.push_back(func);
-		if (first > maxEdgeIndex)
-		{
-			maxEdgeIndex = first;
-		}
-		if (second > maxEdgeIndex)
-		{
-			maxEdgeIndex = second;
-		}
 
 	}
 	void makeEdge(int first, int second, bool(*func)(string))
@@ -454,7 +443,7 @@ Token Scanner::getToken()
 {
 	Token t;
 	int currentState = INITIAL;
-	t.message = "";
+	string message = "";
 	int i;
 
 	if (bufferPosition >= bufferSize)
@@ -475,32 +464,27 @@ Token Scanner::getToken()
 	{
 		if (dfa.nodesOfDFA[currentState].isValid[i](text[bufferPosition]))
 		{
-			t.message += text[bufferPosition];
+			message += text[bufferPosition];
 			currentState = dfa.nodesOfDFA[currentState].edges[i];
 			t.type = dfa.nodesOfDFA[currentState].type;
 			bufferPosition++;
 			i--;
 
-			if (stringsTable.count(t.message) > 0)
+			if (stringsTable.count(message) > 0)
 			{
-				t.value = stringsTable.find(t.message)->second;
+				t.value = stringsTable.find(message)->second;
 			}
 			else
 			{
 				t.value = stringsTable.size();
-				pair<string, int> pair = make_pair(t.message, t.value);
+				pair<string, int> pair = make_pair(message, t.value);
 				stringsTable.insert(pair);
 			}
 
-			if (t.type == STRING && isSpecialKeyword(t.message))
+			if (t.type == STRING && isSpecialKeyword(message))
 			{
 				t.type = KEYWORD;
 				break;
-			}
-
-			if (i == dfa.maxEdgeIndex)
-			{
-				currentState == INVALID;
 			}
 		}
 	}
@@ -510,15 +494,22 @@ Token Scanner::getToken()
 	{
 		bufferPosition--;
 	}
-	return t;
-}
 
+	if (t.type == SPACE || t.type == COMMENT || t.type == NEW_LINE)
+	{
+		return getToken();
+	}
+	else
+	{
+		return t;
+	}
+	
+}
 
 Scanner::~Scanner()
 {
 	delete[] text;
 }
-
 
 
 map<int, string> createMapForTokens()
@@ -582,21 +573,27 @@ int main(int argc, char* argv[])
 	fout << "The input text is: \n\n" << scanner.text << "\n\n\n The result is: \n\n";
 	while (scanner.bufferPosition < characters)
 	{
-
 		Token t = scanner.getToken();
-		if (t.type != SPACE && t.type != COMMENT && t.type != INVALID)
+		string tokenMessage;
+		
+		for (map<string, int>::iterator it = scanner.stringsTable.begin(); it != scanner.stringsTable.end(); it++)
 		{
-			if (t.type == STRING || t.type == KEYWORD || t.type == LETTER)
+			if (it->second == t.value)
 			{
-				fout << "'" << t.message << "'  <-> " << token_types.find(t.type)->second << "              String table value:  " << t.value << endl;
-
-			}
-			else
-			{
-				fout << t.message << "  <-> " << token_types.find(t.type)->second << "              String table value: " << t.value << endl;
-
+				tokenMessage = it->first;
+				break;
 			}
 		}
+		
+		if (t.type == STRING || t.type == KEYWORD || t.type == LETTER)
+		{
+			fout << "'" << tokenMessage << "'  <-> " << token_types.find(t.type)->second << "              String table value:  " << t.value << endl;
+		}
+		else
+		{
+			fout << tokenMessage << "  <-> " << token_types.find(t.type)->second << "              String table value: " << t.value << endl;
+		}
+		
 	}
 
 	fclose(file);
